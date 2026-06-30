@@ -51,7 +51,25 @@ func (a *App) RunAgent(ctx context.Context, agent string) error {
 	if err := a.Runtime.Push(ctx, ws, plan.Manifest); err != nil {
 		return err
 	}
+	if len(plan.Auth.Manifest.Items) > 0 {
+		if err := a.Runtime.Push(ctx, ws, plan.Auth.Manifest); err != nil {
+			return err
+		}
+	}
+	if err := a.bootstrapAgent(ctx, ws, plan); err != nil {
+		return err
+	}
 	return a.Runtime.Attach(ctx, ws, plan.Session(), runtime.AttachOptions{Stdin: os.Stdin, Stdout: os.Stdout, Stderr: os.Stderr})
+}
+
+func (a *App) bootstrapAgent(ctx context.Context, ws *runtime.Workspace, plan RunPlan) error {
+	for i, cmd := range plan.Builtin.Bootstrap {
+		fmt.Printf("Bootstrap %s (%d/%d)...\n", plan.Agent, i+1, len(plan.Builtin.Bootstrap))
+		if _, err := a.Runtime.Run(ctx, ws, runtime.CommandSpec{Command: cmd}); err != nil {
+			return fmt.Errorf("bootstrap %s: %w", plan.Agent, err)
+		}
+	}
+	return nil
 }
 
 func (a *App) Stop(ctx context.Context) error {
@@ -106,6 +124,14 @@ func renderPlan(plan RunPlan, allowSecrets bool) {
 		fmt.Println("Secret-looking files were excluded. Use --allow-secrets to include explicitly selected secrets.")
 	}
 	fmt.Printf("Sync plan: %d files -> %s\n", len(plan.Manifest.Items), plan.Config.Sandbox.Workdir)
+	if len(plan.Auth.Copied) > 0 {
+		fmt.Printf("Agent auth: %d known auth/config file(s) will be copied to the sandbox.\n", len(plan.Auth.Copied))
+	}
+	for _, missing := range plan.Auth.Missing {
+		if missing.Required {
+			fmt.Printf("⚠ required %s auth file not found locally: %s\n", plan.Agent, missing.LocalPath)
+		}
+	}
 }
 
 func saveWorkspace(plan RunPlan, ws *runtime.Workspace) error {

@@ -43,6 +43,7 @@ type TransferItem struct {
 	RemotePath string
 	Mode       string
 	Size       int64
+	Sensitive  bool
 }
 
 type TransferManifest struct {
