@@ -2,12 +2,13 @@
 
 ## Current MVP behavior
 
-- `dunk <agent>` prepares/reuses one E2B sandbox per local repo worktree, uploads the selected workspace files, opens an E2B sandbox shell, and prints the command to run inside the sandbox.
+- `dunk <agent>` prepares/reuses one E2B sandbox per local repo worktree, uploads the selected workspace files, runs known agent bootstrap commands, copies known agent auth/config files when available, opens an E2B sandbox shell, and prints the command to run inside the sandbox.
 - `dunk stop` kills the active E2B sandbox for the current repo worktree while retaining local Dunk state.
 - `dunk pull` is intentionally deferred.
 
 ## Remaining near-term work
 
+- Convert the current runtime Pi bootstrap into a prebuilt E2B template once the flow stabilizes.
 - Replace the E2B CLI shell bridge with direct E2B PTY support in Go.
 - Implement real software session attach/reattach for `dunk claude`, `dunk codex`, and `dunk pi`.
 - Build a real FTUX flow for selecting provider, sync policy, env vars, and MCP servers.

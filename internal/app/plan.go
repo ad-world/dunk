@@ -3,6 +3,7 @@ package app
 import (
 	"path/filepath"
 
+	"dunk/internal/agents"
 	"dunk/internal/config"
 	"dunk/internal/ftux"
 	"dunk/internal/project"
@@ -18,9 +19,11 @@ type RunPlan struct {
 	ConfigExists bool
 	Agent        string
 	Profile      config.AgentConfig
+	Builtin      agents.Profile
 	Env          map[string]string
 	Findings     []ftux.Finding
 	Manifest     runtime.TransferManifest
+	Auth         agents.AuthPlan
 	SyncWarnings []string
 	ProjectState state.ProjectState
 }
@@ -35,11 +38,16 @@ func BuildRunPlan(agent string, allowSecrets bool) (RunPlan, error) {
 	if err != nil {
 		return RunPlan{}, err
 	}
+	builtin := agents.Builtin(agent)
 	profile := cfg.AgentProfile(agent)
 	if profile.Command == "" {
 		profile.Command = agent
 	}
 	manifest, warnings, err := syncplan.Build(prj.Root, cfg.Sandbox.Workdir, cfg.Sync, syncplan.Options{AllowSecrets: allowSecrets})
+	if err != nil {
+		return RunPlan{}, err
+	}
+	auth, err := agents.BuildAuthPlan(agent)
 	if err != nil {
 		return RunPlan{}, err
 	}
@@ -54,9 +62,11 @@ func BuildRunPlan(agent string, allowSecrets bool) (RunPlan, error) {
 		ConfigExists: exists,
 		Agent:        agent,
 		Profile:      profile,
+		Builtin:      builtin,
 		Env:          selectedEnv(profile.Env),
 		Findings:     ftux.Scan(prj.Root, profile.Env),
 		Manifest:     manifest,
+		Auth:         auth,
 		SyncWarnings: warnings,
 		ProjectState: st.Projects[prj.Key],
 	}, nil

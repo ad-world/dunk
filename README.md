@@ -10,7 +10,7 @@ dunk pi
 
 MVP scope:
 
-- `dunk <agent>` starts/reuses one E2B sandbox per local repo worktree, uploads selected local files, and opens an E2B sandbox shell. The current first pass prints the command to run inside the sandbox instead of pretending to support real attach/reattach.
+- `dunk <agent>` starts/reuses one E2B sandbox per local repo worktree, uploads selected local files, copies known agent auth/config files when available, and opens an E2B sandbox shell. The current first pass prints the command to run inside the sandbox instead of pretending to support real attach/reattach.
 - `dunk stop` kills the active sandbox for the current repo worktree while retaining local Dunk state.
 - `dunk pull` is intentionally deferred.
 
@@ -33,6 +33,27 @@ nix develop
 go run ./cmd/dunk --help
 go run ./cmd/dunk claude --dry-run
 ```
+
+## Pi auth
+
+For `dunk pi`, Dunk bootstraps Node 22 + Pi in the sandbox, then copies Pi's local auth/config files separately from workspace sync when present:
+
+```text
+~/.pi/agent/auth.json   -> /home/user/.pi/agent/auth.json
+~/.pi/agent/models.json -> /home/user/.pi/agent/models.json
+```
+
+These files do not belong in `dunk.yaml` and are not copied through project sync rules.
+
+## E2B template
+
+The current MVP can bootstrap Node 22 and Pi on E2B `base`. A starter template also lives at:
+
+```text
+e2b/pi-template/Dockerfile
+```
+
+This template is optional for now; it is the direction for making startup faster and avoiding runtime bootstrap.
 
 ## Config
 
